@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	uploadImage("useremail", "1234567", "internal/tmp/android-stub.jpeg", "SHN")
+	uploadImage("email", "1234567", "internal/tmp/android-stub.jpeg", "SHN")
 }
 
 func uploadImage(username, password, imagePath, newName string) {
