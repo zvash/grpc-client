@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "rpc_update_profile.proto";
+
+package pb;
+
+option go_package = "github.com/zvash/bgmood-api-gateway/pb";
+
+service App {
+  rpc UpdateProfile (stream UpdateProfileRequest) returns (UpdateProfileResponse) {}
+}

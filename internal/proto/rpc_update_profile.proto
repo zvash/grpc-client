@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+package pb;
+
+option go_package = "github.com/zvash/bgmood-api-gateway/pb";
+
+message ProfileInfo {
+  optional string name = 1;
+  optional google.protobuf.Timestamp date_of_birth = 2;
+  optional string image_ext = 3;
+}
+
+message UpdateProfileRequest {
+  oneof data {
+    ProfileInfo info = 1;
+    bytes chunk_data = 2;
+  }
+}
+
+message UpdateProfileResponse {
+  string message = 1;
+}
