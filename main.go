@@ -1,133 +1,20 @@
 package main
 
 import (
-	"bufio"
-	"context"
 	"flag"
-	"fmt"
 	"github.com/zvash/grpc-client/internal/authpb"
 	"github.com/zvash/grpc-client/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
-	"io"
 	"log"
-	"os"
-	"path/filepath"
-	"time"
 )
 
-type HasMap interface {
+type Invokable interface {
 	GetMap() map[string]string
 	Invoke()
 }
 
-type UpdateProfileArgs struct {
-	Email     string
-	Password  string
-	Name      string
-	ImagePath string
-}
-
-func (a UpdateProfileArgs) GetMap() map[string]string {
-	args := make(map[string]string)
-	args["email"] = a.Email
-	args["password"] = a.Password
-	args["name"] = a.Name
-	args["image_path"] = a.ImagePath
-	return args
-}
-
-func (a UpdateProfileArgs) Invoke() {
-	file, err := os.Open(a.ImagePath)
-	if err != nil {
-		log.Fatal("cannot open image file: ", err)
-	}
-	defer file.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	serverAddress := "127.0.0.1:9090"
-	transportOption := grpc.WithTransportCredentials(insecure.NewCredentials())
-	cc, err := grpc.Dial(serverAddress, transportOption)
-	if err != nil {
-		log.Panicf("Could not dial %s, err: %v", serverAddress, transportOption)
-	}
-
-	authClient := authpb.NewAuthClient(cc)
-
-	loginResponse, err := authClient.Login(ctx, &authpb.LoginRequest{
-		Email:    a.Email,
-		Password: a.Password,
-	})
-	if err != nil {
-		log.Panicf("Failed to login, err: %v", err)
-	}
-
-	token := fmt.Sprintf("Bearer %s", loginResponse.AccessToken)
-
-	headers := make(map[string]string)
-	headers["authorization"] = token
-	headers["user-agent"] = "custom-grpc-client"
-	md := metadata.New(headers)
-	requestContext := metadata.NewOutgoingContext(ctx, md)
-
-	gatewayClient := pb.NewAppClient(cc)
-
-	stream, err := gatewayClient.UpdateProfile(requestContext)
-	if err != nil {
-		log.Fatal("cannot upload image: ", err)
-	}
-
-	extension := filepath.Ext(a.ImagePath)
-
-	req := &pb.UpdateProfileRequest{
-		Data: &pb.UpdateProfileRequest_Info{
-			Info: &pb.ProfileInfo{
-				Name:     &a.Name,
-				ImageExt: &extension,
-			},
-		},
-	}
-	err = stream.Send(req)
-	if err != nil {
-		log.Fatal("cannot send user info to server: ", err, stream.RecvMsg(nil))
-	}
-
-	reader := bufio.NewReader(file)
-	buffer := make([]byte, 1024*128)
-
-	for {
-		n, err := reader.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal("cannot read chunk to buffer: ", err)
-		}
-
-		req := &pb.UpdateProfileRequest{
-			Data: &pb.UpdateProfileRequest_ChunkData{
-				ChunkData: buffer[:n],
-			},
-		}
-
-		err = stream.Send(req)
-		if err != nil {
-			log.Fatal("cannot send chunk to server: ", err, stream.RecvMsg(nil))
-		}
-	}
-
-	res, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Fatal("cannot receive response: ", err)
-	}
-
-	log.Printf("profile updated with messege: %s", res.Message)
-}
-
-func prepareMethodCall() HasMap {
+func prepareMethodCall() Invokable {
 	method := flag.String("method", "", "gRPC method name")
 	email := flag.String("email", "", "user's email for authentication")
 	name := flag.String("name", "", "user's name for update")
@@ -144,12 +31,40 @@ func prepareMethodCall() HasMap {
 			Password:  *password,
 			ImagePath: *imagePath,
 		}
+	case "RegisterUser":
+		return RegisterUserArgs{
+			Email:    *email,
+			Name:     *name,
+			Password: *password,
+		}
 	}
 	return nil
+}
 
+func buildAuthClient() authpb.AuthClient {
+	serverAddress := "127.0.0.1:9090"
+	transportOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	cc, err := grpc.Dial(serverAddress, transportOption)
+	if err != nil {
+		log.Panicf("Could not dial %s, err: %v", serverAddress, transportOption)
+	}
+	return authpb.NewAuthClient(cc)
+}
+
+func buildAppClient() pb.AppClient {
+	serverAddress := "127.0.0.1:9090"
+	transportOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	cc, err := grpc.Dial(serverAddress, transportOption)
+	if err != nil {
+		log.Panicf("Could not dial %s, err: %v", serverAddress, transportOption)
+	}
+	return pb.NewAppClient(cc)
 }
 
 func main() {
 	method := prepareMethodCall()
+	if method == nil {
+		log.Panic("invalid method.")
+	}
 	method.Invoke()
 }
