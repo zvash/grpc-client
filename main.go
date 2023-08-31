@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"github.com/zvash/grpc-client/internal/authpb"
 	"github.com/zvash/grpc-client/internal/pb"
@@ -16,12 +17,29 @@ import (
 	"time"
 )
 
-func main() {
-	uploadImage("email", "1234567", "internal/tmp/android-stub.jpeg", "SHN")
+type HasMap interface {
+	GetMap() map[string]string
+	Invoke()
 }
 
-func uploadImage(username, password, imagePath, newName string) {
-	file, err := os.Open(imagePath)
+type UpdateProfileArgs struct {
+	Email     string
+	Password  string
+	Name      string
+	ImagePath string
+}
+
+func (a UpdateProfileArgs) GetMap() map[string]string {
+	args := make(map[string]string)
+	args["email"] = a.Email
+	args["password"] = a.Password
+	args["name"] = a.Name
+	args["image_path"] = a.ImagePath
+	return args
+}
+
+func (a UpdateProfileArgs) Invoke() {
+	file, err := os.Open(a.ImagePath)
 	if err != nil {
 		log.Fatal("cannot open image file: ", err)
 	}
@@ -40,8 +58,8 @@ func uploadImage(username, password, imagePath, newName string) {
 	authClient := authpb.NewAuthClient(cc)
 
 	loginResponse, err := authClient.Login(ctx, &authpb.LoginRequest{
-		Email:    username,
-		Password: password,
+		Email:    a.Email,
+		Password: a.Password,
 	})
 	if err != nil {
 		log.Panicf("Failed to login, err: %v", err)
@@ -62,12 +80,12 @@ func uploadImage(username, password, imagePath, newName string) {
 		log.Fatal("cannot upload image: ", err)
 	}
 
-	extension := filepath.Ext(imagePath)
+	extension := filepath.Ext(a.ImagePath)
 
 	req := &pb.UpdateProfileRequest{
 		Data: &pb.UpdateProfileRequest_Info{
 			Info: &pb.ProfileInfo{
-				Name:     &newName,
+				Name:     &a.Name,
 				ImageExt: &extension,
 			},
 		},
@@ -107,4 +125,31 @@ func uploadImage(username, password, imagePath, newName string) {
 	}
 
 	log.Printf("profile updated with messege: %s", res.Message)
+}
+
+func prepareMethodCall() HasMap {
+	method := flag.String("method", "", "gRPC method name")
+	email := flag.String("email", "", "user's email for authentication")
+	name := flag.String("name", "", "user's name for update")
+	password := flag.String("password", "", "user's password for authentication")
+	imagePath := flag.String("image", "", "path to an image")
+
+	flag.Parse()
+
+	switch *method {
+	case "UpdateProfile":
+		return UpdateProfileArgs{
+			Email:     *email,
+			Name:      *name,
+			Password:  *password,
+			ImagePath: *imagePath,
+		}
+	}
+	return nil
+
+}
+
+func main() {
+	method := prepareMethodCall()
+	method.Invoke()
 }
