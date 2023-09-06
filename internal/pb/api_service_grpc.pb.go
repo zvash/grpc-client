@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	App_UpdateProfile_FullMethodName = "/pb.App/UpdateProfile"
 	App_BuildCircle_FullMethodName   = "/pb.App/BuildCircle"
+	App_ShareMood_FullMethodName     = "/pb.App/ShareMood"
 )
 
 // AppClient is the client API for App service.
@@ -29,6 +30,7 @@ const (
 type AppClient interface {
 	UpdateProfile(ctx context.Context, opts ...grpc.CallOption) (App_UpdateProfileClient, error)
 	BuildCircle(ctx context.Context, opts ...grpc.CallOption) (App_BuildCircleClient, error)
+	ShareMood(ctx context.Context, opts ...grpc.CallOption) (App_ShareMoodClient, error)
 }
 
 type appClient struct {
@@ -107,12 +109,47 @@ func (x *appBuildCircleClient) CloseAndRecv() (*BuildCircleResponse, error) {
 	return m, nil
 }
 
+func (c *appClient) ShareMood(ctx context.Context, opts ...grpc.CallOption) (App_ShareMoodClient, error) {
+	stream, err := c.cc.NewStream(ctx, &App_ServiceDesc.Streams[2], App_ShareMood_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &appShareMoodClient{stream}
+	return x, nil
+}
+
+type App_ShareMoodClient interface {
+	Send(*ShareMoodRequest) error
+	CloseAndRecv() (*ShareMoodResponse, error)
+	grpc.ClientStream
+}
+
+type appShareMoodClient struct {
+	grpc.ClientStream
+}
+
+func (x *appShareMoodClient) Send(m *ShareMoodRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *appShareMoodClient) CloseAndRecv() (*ShareMoodResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ShareMoodResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AppServer is the server API for App service.
 // All implementations must embed UnimplementedAppServer
 // for forward compatibility
 type AppServer interface {
 	UpdateProfile(App_UpdateProfileServer) error
 	BuildCircle(App_BuildCircleServer) error
+	ShareMood(App_ShareMoodServer) error
 	mustEmbedUnimplementedAppServer()
 }
 
@@ -125,6 +162,9 @@ func (UnimplementedAppServer) UpdateProfile(App_UpdateProfileServer) error {
 }
 func (UnimplementedAppServer) BuildCircle(App_BuildCircleServer) error {
 	return status.Errorf(codes.Unimplemented, "method BuildCircle not implemented")
+}
+func (UnimplementedAppServer) ShareMood(App_ShareMoodServer) error {
+	return status.Errorf(codes.Unimplemented, "method ShareMood not implemented")
 }
 func (UnimplementedAppServer) mustEmbedUnimplementedAppServer() {}
 
@@ -191,6 +231,32 @@ func (x *appBuildCircleServer) Recv() (*BuildCircleRequest, error) {
 	return m, nil
 }
 
+func _App_ShareMood_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AppServer).ShareMood(&appShareMoodServer{stream})
+}
+
+type App_ShareMoodServer interface {
+	SendAndClose(*ShareMoodResponse) error
+	Recv() (*ShareMoodRequest, error)
+	grpc.ServerStream
+}
+
+type appShareMoodServer struct {
+	grpc.ServerStream
+}
+
+func (x *appShareMoodServer) SendAndClose(m *ShareMoodResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *appShareMoodServer) Recv() (*ShareMoodRequest, error) {
+	m := new(ShareMoodRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // App_ServiceDesc is the grpc.ServiceDesc for App service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -207,6 +273,11 @@ var App_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "BuildCircle",
 			Handler:       _App_BuildCircle_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "ShareMood",
+			Handler:       _App_ShareMood_Handler,
 			ClientStreams: true,
 		},
 	},

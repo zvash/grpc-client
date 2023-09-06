@@ -25,6 +25,8 @@ func prepareMethodCall() Invokable {
 	description := flag.String("description", "", "description for anything that needs a description")
 	isPrivate := flag.String("is_private", "false", "indicates if circle is private. accepted values are true and false.")
 	circleType := flag.String("circle_type", "hall", "indicates if circle is a room or a hall. accepted values are room and hall.")
+	setBackground := flag.String("set_background", "false", "indicates if poster wants background to change automatically. accepted values are true and false.")
+	circleId := flag.String("circle_id", "", "uuid of the circle that we want to post to it.")
 
 	flag.Parse()
 
@@ -51,6 +53,15 @@ func prepareMethodCall() Invokable {
 			ImagePath:   *imagePath,
 			Email:       *email,
 			Password:    *password,
+		}
+	case "ShareMood":
+		return ShareMoodArgs{
+			CircleId:      *circleId,
+			Description:   *description,
+			SetBackground: *setBackground,
+			ImagePath:     *imagePath,
+			Email:         *email,
+			Password:      *password,
 		}
 	}
 	return nil
