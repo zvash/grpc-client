@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.23.4
-// source: service.proto
+// source: api_service.proto
 
 package pb
 
@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	App_UpdateProfile_FullMethodName = "/pb.App/UpdateProfile"
+	App_BuildCircle_FullMethodName   = "/pb.App/BuildCircle"
 )
 
 // AppClient is the client API for App service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AppClient interface {
 	UpdateProfile(ctx context.Context, opts ...grpc.CallOption) (App_UpdateProfileClient, error)
+	BuildCircle(ctx context.Context, opts ...grpc.CallOption) (App_BuildCircleClient, error)
 }
 
 type appClient struct {
@@ -71,11 +73,46 @@ func (x *appUpdateProfileClient) CloseAndRecv() (*UpdateProfileResponse, error) 
 	return m, nil
 }
 
+func (c *appClient) BuildCircle(ctx context.Context, opts ...grpc.CallOption) (App_BuildCircleClient, error) {
+	stream, err := c.cc.NewStream(ctx, &App_ServiceDesc.Streams[1], App_BuildCircle_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &appBuildCircleClient{stream}
+	return x, nil
+}
+
+type App_BuildCircleClient interface {
+	Send(*BuildCircleRequest) error
+	CloseAndRecv() (*BuildCircleResponse, error)
+	grpc.ClientStream
+}
+
+type appBuildCircleClient struct {
+	grpc.ClientStream
+}
+
+func (x *appBuildCircleClient) Send(m *BuildCircleRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *appBuildCircleClient) CloseAndRecv() (*BuildCircleResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(BuildCircleResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // AppServer is the server API for App service.
 // All implementations must embed UnimplementedAppServer
 // for forward compatibility
 type AppServer interface {
 	UpdateProfile(App_UpdateProfileServer) error
+	BuildCircle(App_BuildCircleServer) error
 	mustEmbedUnimplementedAppServer()
 }
 
@@ -85,6 +122,9 @@ type UnimplementedAppServer struct {
 
 func (UnimplementedAppServer) UpdateProfile(App_UpdateProfileServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpdateProfile not implemented")
+}
+func (UnimplementedAppServer) BuildCircle(App_BuildCircleServer) error {
+	return status.Errorf(codes.Unimplemented, "method BuildCircle not implemented")
 }
 func (UnimplementedAppServer) mustEmbedUnimplementedAppServer() {}
 
@@ -125,6 +165,32 @@ func (x *appUpdateProfileServer) Recv() (*UpdateProfileRequest, error) {
 	return m, nil
 }
 
+func _App_BuildCircle_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AppServer).BuildCircle(&appBuildCircleServer{stream})
+}
+
+type App_BuildCircleServer interface {
+	SendAndClose(*BuildCircleResponse) error
+	Recv() (*BuildCircleRequest, error)
+	grpc.ServerStream
+}
+
+type appBuildCircleServer struct {
+	grpc.ServerStream
+}
+
+func (x *appBuildCircleServer) SendAndClose(m *BuildCircleResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *appBuildCircleServer) Recv() (*BuildCircleRequest, error) {
+	m := new(BuildCircleRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // App_ServiceDesc is the grpc.ServiceDesc for App service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -138,6 +204,11 @@ var App_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _App_UpdateProfile_Handler,
 			ClientStreams: true,
 		},
+		{
+			StreamName:    "BuildCircle",
+			Handler:       _App_BuildCircle_Handler,
+			ClientStreams: true,
+		},
 	},
-	Metadata: "service.proto",
+	Metadata: "api_service.proto",
 }

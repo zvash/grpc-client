@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
+	"strings"
 )
 
 type Invokable interface {
@@ -20,6 +21,10 @@ func prepareMethodCall() Invokable {
 	name := flag.String("name", "", "user's name for update")
 	password := flag.String("password", "", "user's password for authentication")
 	imagePath := flag.String("image", "", "path to an image")
+	title := flag.String("title", "", "title of anything that needs a title")
+	description := flag.String("description", "", "description for anything that needs a description")
+	isPrivate := flag.String("is_private", "false", "indicates if circle is private. accepted values are true and false.")
+	circleType := flag.String("circle_type", "hall", "indicates if circle is a room or a hall. accepted values are room and hall.")
 
 	flag.Parse()
 
@@ -36,6 +41,16 @@ func prepareMethodCall() Invokable {
 			Email:    *email,
 			Name:     *name,
 			Password: *password,
+		}
+	case "BuildCircle":
+		return BuildCircleArgs{
+			Title:       *title,
+			Description: *description,
+			CircleType:  strings.ToUpper(*circleType),
+			IsPrivate:   *isPrivate,
+			ImagePath:   *imagePath,
+			Email:       *email,
+			Password:    *password,
 		}
 	}
 	return nil
