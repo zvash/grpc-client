@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	App_UpdateProfile_FullMethodName = "/pb.App/UpdateProfile"
-	App_BuildCircle_FullMethodName   = "/pb.App/BuildCircle"
-	App_ShareMood_FullMethodName     = "/pb.App/ShareMood"
+	App_UpdateProfile_FullMethodName                 = "/pb.App/UpdateProfile"
+	App_BuildCircle_FullMethodName                   = "/pb.App/BuildCircle"
+	App_ShareMood_FullMethodName                     = "/pb.App/ShareMood"
+	App_GetCircleJoinRequestsWithUser_FullMethodName = "/pb.App/GetCircleJoinRequestsWithUser"
 )
 
 // AppClient is the client API for App service.
@@ -31,6 +32,7 @@ type AppClient interface {
 	UpdateProfile(ctx context.Context, opts ...grpc.CallOption) (App_UpdateProfileClient, error)
 	BuildCircle(ctx context.Context, opts ...grpc.CallOption) (App_BuildCircleClient, error)
 	ShareMood(ctx context.Context, opts ...grpc.CallOption) (App_ShareMoodClient, error)
+	GetCircleJoinRequestsWithUser(ctx context.Context, in *GetCircleJoinRequestsWithUserRequest, opts ...grpc.CallOption) (*CircleJoinRequestsWithUserResponse, error)
 }
 
 type appClient struct {
@@ -143,6 +145,15 @@ func (x *appShareMoodClient) CloseAndRecv() (*ShareMoodResponse, error) {
 	return m, nil
 }
 
+func (c *appClient) GetCircleJoinRequestsWithUser(ctx context.Context, in *GetCircleJoinRequestsWithUserRequest, opts ...grpc.CallOption) (*CircleJoinRequestsWithUserResponse, error) {
+	out := new(CircleJoinRequestsWithUserResponse)
+	err := c.cc.Invoke(ctx, App_GetCircleJoinRequestsWithUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AppServer is the server API for App service.
 // All implementations must embed UnimplementedAppServer
 // for forward compatibility
@@ -150,6 +161,7 @@ type AppServer interface {
 	UpdateProfile(App_UpdateProfileServer) error
 	BuildCircle(App_BuildCircleServer) error
 	ShareMood(App_ShareMoodServer) error
+	GetCircleJoinRequestsWithUser(context.Context, *GetCircleJoinRequestsWithUserRequest) (*CircleJoinRequestsWithUserResponse, error)
 	mustEmbedUnimplementedAppServer()
 }
 
@@ -165,6 +177,9 @@ func (UnimplementedAppServer) BuildCircle(App_BuildCircleServer) error {
 }
 func (UnimplementedAppServer) ShareMood(App_ShareMoodServer) error {
 	return status.Errorf(codes.Unimplemented, "method ShareMood not implemented")
+}
+func (UnimplementedAppServer) GetCircleJoinRequestsWithUser(context.Context, *GetCircleJoinRequestsWithUserRequest) (*CircleJoinRequestsWithUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCircleJoinRequestsWithUser not implemented")
 }
 func (UnimplementedAppServer) mustEmbedUnimplementedAppServer() {}
 
@@ -257,13 +272,36 @@ func (x *appShareMoodServer) Recv() (*ShareMoodRequest, error) {
 	return m, nil
 }
 
+func _App_GetCircleJoinRequestsWithUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCircleJoinRequestsWithUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppServer).GetCircleJoinRequestsWithUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: App_GetCircleJoinRequestsWithUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppServer).GetCircleJoinRequestsWithUser(ctx, req.(*GetCircleJoinRequestsWithUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // App_ServiceDesc is the grpc.ServiceDesc for App service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var App_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.App",
 	HandlerType: (*AppServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetCircleJoinRequestsWithUser",
+			Handler:    _App_GetCircleJoinRequestsWithUser_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "UpdateProfile",
